@@ -1,6 +1,7 @@
 ﻿#pragma once
+#include "WorldObject.h"
 
-class Primitive
+class Primitive : WorldObject
 {
 public:
     

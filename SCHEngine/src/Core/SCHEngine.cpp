@@ -1,4 +1,6 @@
 #include "CommonTypes/Shader.h"
+#include "CommonTypes/Texture.h"
+#include "CommonTypes/Window.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -8,59 +10,40 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include "CommonTypes/WorldObject.h"
+
+// global scope
+namespace
+{
+    Window* mainWindow = nullptr;
+    // settings
+    constexpr unsigned int DEFAULT_SCR_WIDTH = 800;
+    constexpr unsigned int DEFAULT_SCR_HEIGHT = 600;
+}
 
 void init();
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
-// settings
-constexpr unsigned int SCR_WIDTH = 800;
-constexpr unsigned int SCR_HEIGHT = 600;
-
-/*const char* vertexShaderSource = "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "out vec4 vertexColor;\n"//specify a color output to the fragment shader
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "   vertexColor = vec4(0.5, 0.0, 0.0, 1.0);\n"
-    "}\0";*/
-
-/*const char* vertexShaderSource = "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n" // the position variable has attribute position 0
-    "layout (location = 1) in vec3 aColor;\n" // color variable has atttribue position 1
-    "out vec3 ourColor;\n" //specify a color output to the fragment shader
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "   ourColor = aColor;\n"
-    "}\0";*/
-
-/*const char* fragmentShaderSource = "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "in vec3 ourColor;\n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = vec4(ourColor, 1.0f);\n"
-    "}\n\0";*/
-
 int main()
 {
    init();
-
-
-
+    
     // glfw window creation
     // --------------------
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SCHEngine", nullptr, nullptr);
-    if (window == nullptr)
+    mainWindow = new Window(DEFAULT_SCR_WIDTH, DEFAULT_SCR_HEIGHT);
+    if(mainWindow)
     {
-        std::cout << "Failed to create GLFW window" << std::endl;
+        mainWindow->Init();
+    }
+    else
+    {
+        std::cout << "Failed to create Window" << std::endl;
         glfwTerminate();
         return -1;
     }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    
+    glfwSetFramebufferSizeCallback(mainWindow->GetGLFWWindow(), framebuffer_size_callback);
 
     // glad: load all OpenGL function pointers
     // ---------------------------------------
@@ -70,64 +53,16 @@ int main()
         return -1;
     }
 
+    // Enable Depth buffer for proper rendering
     glEnable(GL_DEPTH_TEST);
 
-    Shader ourShader("./src/Core/Shaders/vertex.vert", "./src/Core/Shaders/fragment.frag");
-
-    // Texture 1
-    unsigned int texture1, texture2;
-    glGenTextures(1, &texture1);
-    glBindTexture(GL_TEXTURE_2D, texture1);
+    Shader mainShader("./src/Core/Shaders/vertex.vert", "./src/Core/Shaders/fragment.frag");
     
-    // texture filtering/wrapping options (currently bound object)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    Texture texture1("container.jpg", GL_RGB);
+    texture1.LoadTexture();
 
-    // load and generate the texture
-    int width, height, nrChannels;
-    unsigned char* data = stbi_load("./data/textures/container.jpg", &width, &height, &nrChannels, 0);
-    //unsigned char* data = stbi_load("./Textures/eye.png", &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        std::cout << "Failed to load texture1" << std::endl;
-    }
-    
-
-    stbi_image_free(data);
-
-    // Texture 2
-    glGenTextures(1, &texture2);
-    glBindTexture(GL_TEXTURE_2D, texture2);
-    
-    // texture filtering/wrapping options (currently bound object)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    // load and generate the texture
-    stbi_set_flip_vertically_on_load(true); // flip
-    data = stbi_load("./data/textures/awesomeface.png", &width, &height, &nrChannels, 0);
-    //data = stbi_load("./Textures/andres2.png", &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        std::cout << "Failed to load texture2" << std::endl;
-    }
-    
-
-    stbi_image_free(data);
+    Texture texture2("awesomeface.png", GL_RGBA);
+    texture2.LoadTexture();
 
     glm::vec3 cubePositions[] = {
         glm::vec3( 0.0f, 0.0f, 0.0f),
@@ -258,11 +193,15 @@ int main()
         0, 1, 3,  // first Triangle
         1, 2, 3   // second Triangle
     };
+
+    WorldObject* cube = new WorldObject(vertices, 36);
+    cube->Init();
+
     
-    unsigned int VBOs[2], VAOs[2], EBO;
+    unsigned int VBOs[2], VAOs[2];//, EBO;
     glGenVertexArrays(2, VAOs);
     glGenBuffers(2, VBOs);
-    glGenBuffers(1, &EBO);
+    //glGenBuffers(1, &EBO);
     
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
     glBindVertexArray(VAOs[0]);
@@ -310,32 +249,32 @@ int main()
     //glEnableVertexAttribArray(0);
 
     // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
-    glBindBuffer(GL_ARRAY_BUFFER, 0); 
+    //glBindBuffer(GL_ARRAY_BUFFER, 0); 
 
     // remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO; keep the EBO bound.
     //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
     // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-    glBindVertexArray(0); 
+    //glBindVertexArray(0); 
 
 
     // uncomment this call to draw in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    ourShader.use();
-    ourShader.setInt("texture1", 0);
-    ourShader.setInt("texture2", 1);
+    mainShader.use();
+    mainShader.setInt("texture1", 0);
+    mainShader.setInt("texture2", 1);
 
     
 
     // render loop
     // -----------
-    while (!glfwWindowShouldClose(window))
+    while (!glfwWindowShouldClose(mainWindow->GetGLFWWindow()))
     {
         // input
         // -----
-        processInput(window);
+        processInput(mainWindow->GetGLFWWindow());
 
         // render
         // ------
@@ -343,12 +282,12 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
+        glBindTexture(GL_TEXTURE_2D, texture1.GetId());
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
+        glBindTexture(GL_TEXTURE_2D, texture2.GetId());
 
         // draw our first triangle
-        ourShader.use();
+        mainShader.use();
 
         // Camera
         glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
@@ -376,15 +315,15 @@ int main()
         //view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 
         glm::mat4 projection;
-        projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(45.0f), static_cast<float>(mainWindow->GetWidth()) / static_cast<float>(mainWindow->GetHeight()), 0.1f, 100.0f);
 
-        int modelLoc = glGetUniformLocation(ourShader.ID, "model");
+        int modelLoc = glGetUniformLocation(mainShader.ID, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
-        int viewLoc = glGetUniformLocation(ourShader.ID, "view");
+        int viewLoc = glGetUniformLocation(mainShader.ID, "view");
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
-        int projectionLoc = glGetUniformLocation(ourShader.ID, "projection");
+        int projectionLoc = glGetUniformLocation(mainShader.ID, "projection");
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
         
         //glm::mat4 trans = glm::mat4(1.0f);
@@ -402,7 +341,7 @@ int main()
         
         //glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
         
-        
+        //cube->Use();
         glBindVertexArray(VAOs[0]);
         for(unsigned int i = 0; i < 10; i++)
         {
@@ -410,8 +349,9 @@ int main()
             model = glm::translate(model, cubePositions[i]);
             float angle = 20.0f * i;
             model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
-            ourShader.setMat4("model", model);
+            mainShader.setMat4("model", model);
 
+            //cube->Draw();
             glDrawArrays(GL_TRIANGLES, 0, 36); //cube or pyramid
         }
         //glDrawArrays(GL_TRIANGLES, 0, 3); //1 triangle
@@ -426,16 +366,17 @@ int main()
  
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(mainWindow->GetGLFWWindow());
         glfwPollEvents();
     }
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
+    //cube->Destroy();
     glDeleteVertexArrays(2, VAOs);
     glDeleteBuffers(2, VBOs);
-    glDeleteBuffers(1, &EBO);
-    ourShader.remove();
+    //glDeleteBuffers(1, &EBO);
+    mainShader.remove();
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
@@ -448,7 +389,14 @@ int main()
 void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
+        mainWindow->Close();
+
+    if(glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    if(glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -458,6 +406,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // make sure the viewport matches the new window dimensions; note that width and 
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
+    mainWindow->SetWindowSize(width, height);
 }
 
 /*

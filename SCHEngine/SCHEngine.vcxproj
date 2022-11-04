@@ -303,6 +303,9 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
     </ClCompile>
+    <ClCompile Include="src\Core\CommonTypes\Texture.cpp" />
+    <ClCompile Include="src\Core\CommonTypes\Window.cpp" />
+    <ClCompile Include="src\Core\CommonTypes\WorldObject.cpp" />
     <ClCompile Include="src\Core\SCHEngine.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -381,6 +384,9 @@
     <ClInclude Include="include\stb_image.h" />
     <ClInclude Include="src\Core\CommonTypes\Primitive.h" />
     <ClInclude Include="src\Core\CommonTypes\Shader.h" />
+    <ClInclude Include="src\Core\CommonTypes\Texture.h" />
+    <ClInclude Include="src\Core\CommonTypes\Window.h" />
+    <ClInclude Include="src\Core\CommonTypes\WorldObject.h" />
     <ClInclude Include="src\Core\Log\SCHLog.h" />
   </ItemGroup>
   <ItemGroup>
